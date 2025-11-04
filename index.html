@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Compress your PDF files quickly and easily. Free online PDF compression tool.">
+    <title>PDF Compressor - Reduce PDF File Size</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="32" height="32" rx="8" fill="url(#gradient)"/>
+                    <path d="M8 12H24M8 16H24M8 20H18" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="0" y1="0" x2="32" y2="32">
+                            <stop offset="0%" stop-color="#667eea"/>
+                            <stop offset="100%" stop-color="#764ba2"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <h1>PDF Compressor</h1>
+            </div>
+        </header>
+
+        <main>
+            <div class="hero">
+                <h2>Compress Your PDF Files</h2>
+                <p>Reduce PDF file size while maintaining quality. Fast, secure, and free.</p>
+            </div>
+
+            <div class="upload-section" id="uploadSection">
+                <div class="upload-area" id="uploadArea">
+                    <svg class="upload-icon" width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M32 12V40M32 12L22 22M32 12L42 22" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12 44V48C12 50.2091 13.7909 52 16 52H48C50.2091 52 52 50.2091 52 48V44" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                    <h3>Drop your PDF here</h3>
+                    <p>or click to browse</p>
+                    <input type="file" id="fileInput" accept=".pdf" hidden>
+                    <button class="browse-btn" id="browseBtn">Choose File</button>
+                </div>
+            </div>
+
+            <div class="processing-section hidden" id="processingSection">
+                <div class="file-info" id="fileInfo">
+                    <div class="file-icon">📄</div>
+                    <div class="file-details">
+                        <div class="file-name" id="fileName"></div>
+                        <div class="file-size" id="originalSize"></div>
+                    </div>
+                </div>
+
+                <div class="compression-settings">
+                    <label for="qualitySlider">Compression Level:</label>
+                    <div class="slider-container">
+                        <input type="range" id="qualitySlider" min="1" max="3" value="2" step="1">
+                        <div class="slider-labels">
+                            <span>Low</span>
+                            <span>Medium</span>
+                            <span>High</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="compress-btn" id="compressBtn">Compress PDF</button>
+
+                <div class="progress-container hidden" id="progressContainer">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p class="progress-text" id="progressText">Compressing...</p>
+                </div>
+            </div>
+
+            <div class="result-section hidden" id="resultSection">
+                <div class="result-card">
+                    <div class="success-icon">✓</div>
+                    <h3>Compression Complete!</h3>
+                    <div class="size-comparison">
+                        <div class="size-box">
+                            <span class="label">Original</span>
+                            <span class="size" id="originalSizeResult"></span>
+                        </div>
+                        <div class="arrow">→</div>
+                        <div class="size-box">
+                            <span class="label">Compressed</span>
+                            <span class="size" id="compressedSize"></span>
+                        </div>
+                    </div>
+                    <div class="savings" id="savings"></div>
+                    <div class="action-buttons">
+                        <button class="download-btn" id="downloadBtn">Download PDF</button>
+                        <button class="reset-btn" id="resetBtn">Compress Another</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Your files are processed locally in your browser. We don't store or upload your data.</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
