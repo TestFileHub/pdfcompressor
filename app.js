@@ -104,47 +104,95 @@ async function compressPDF() {
     updateProgress(10, 'Loading PDF...');
 
     try {
+        // Configure PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
         // Read the file
         const arrayBuffer = await selectedFile.arrayBuffer();
-        updateProgress(30, 'Analyzing PDF...');
+        updateProgress(20, 'Analyzing PDF...');
 
-        // Load the PDF
-        const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
-        updateProgress(50, 'Compressing PDF...');
+        // Load the PDF with pdf.js
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+        const numPages = pdf.numPages;
+
+        updateProgress(30, 'Preparing compression...');
 
         // Get compression level from slider
         const compressionLevel = parseInt(qualitySlider.value);
 
-        // Create a new PDF document
-        const compressedDoc = await PDFLib.PDFDocument.create();
+        // Determine quality and scale based on compression level
+        // Level 1 (Low): High quality, minimal compression
+        // Level 2 (Medium): Medium quality, moderate compression
+        // Level 3 (High): Low quality, maximum compression
+        const qualitySettings = {
+            1: { scale: 1.5, quality: 0.92, dpi: 150 },
+            2: { scale: 1.2, quality: 0.75, dpi: 120 },
+            3: { scale: 1.0, quality: 0.60, dpi: 96 }
+        };
 
-        // Copy pages with compression
-        const pages = pdfDoc.getPages();
-        for (let i = 0; i < pages.length; i++) {
-            const [copiedPage] = await compressedDoc.copyPages(pdfDoc, [i]);
-            compressedDoc.addPage(copiedPage);
+        const settings = qualitySettings[compressionLevel];
 
-            // Update progress
-            const pageProgress = 50 + ((i + 1) / pages.length) * 30;
-            updateProgress(pageProgress, `Compressing page ${i + 1} of ${pages.length}...`);
+        // Create new PDF with jsPDF
+        const { jsPDF } = window.jspdf;
+
+        // Get first page to determine dimensions
+        const firstPage = await pdf.getPage(1);
+        const viewport = firstPage.getViewport({ scale: 1.0 });
+
+        // Create PDF with correct dimensions (in mm)
+        const pdfWidthMM = viewport.width * 0.264583; // Convert px to mm
+        const pdfHeightMM = viewport.height * 0.264583;
+
+        const compressedPdf = new jsPDF({
+            orientation: pdfWidthMM > pdfHeightMM ? 'landscape' : 'portrait',
+            unit: 'mm',
+            format: [pdfWidthMM, pdfHeightMM],
+            compress: true
+        });
+
+        // Process each page
+        for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+            updateProgress(30 + (pageNum / numPages) * 60, `Compressing page ${pageNum} of ${numPages}...`);
+
+            const page = await pdf.getPage(pageNum);
+            const pageViewport = page.getViewport({ scale: settings.scale });
+
+            // Create canvas
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = pageViewport.width;
+            canvas.height = pageViewport.height;
+
+            // Render PDF page to canvas
+            await page.render({
+                canvasContext: context,
+                viewport: pageViewport
+            }).promise;
+
+            // Convert canvas to compressed image
+            const imgData = canvas.toDataURL('image/jpeg', settings.quality);
+
+            // Add page to new PDF (skip first page as it's already created)
+            if (pageNum > 1) {
+                compressedPdf.addPage([pdfWidthMM, pdfHeightMM], pdfWidthMM > pdfHeightMM ? 'landscape' : 'portrait');
+            }
+
+            // Add image to PDF page
+            compressedPdf.addImage(imgData, 'JPEG', 0, 0, pdfWidthMM, pdfHeightMM, undefined, 'FAST');
         }
 
-        updateProgress(85, 'Optimizing...');
+        updateProgress(95, 'Finalizing...');
 
-        // Serialize the PDF with compression
-        const pdfBytes = await compressedDoc.save({
-            useObjectStreams: true,
-            addDefaultPage: false,
-            objectsPerTick: compressionLevel === 3 ? 50 : compressionLevel === 2 ? 30 : 20,
-        });
+        // Generate compressed PDF
+        const pdfBytes = compressedPdf.output('arraybuffer');
+        compressedPdfBytes = new Uint8Array(pdfBytes);
 
         updateProgress(100, 'Complete!');
 
-        compressedPdfBytes = pdfBytes;
-
         // Calculate compression ratio
         const originalSizeBytes = selectedFile.size;
-        const compressedSizeBytes = pdfBytes.length;
+        const compressedSizeBytes = compressedPdfBytes.length;
         const savedBytes = originalSizeBytes - compressedSizeBytes;
         const savedPercentage = Math.round((savedBytes / originalSizeBytes) * 100);
 
@@ -155,7 +203,7 @@ async function compressPDF() {
 
     } catch (error) {
         console.error('Compression error:', error);
-        alert('An error occurred while compressing the PDF. Please try again.');
+        alert('An error occurred while compressing the PDF. Please try again with a different file or compression level.');
         compressBtn.disabled = false;
         compressBtn.textContent = 'Compress PDF';
         progressContainer.classList.add('hidden');
